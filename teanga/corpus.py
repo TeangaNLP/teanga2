@@ -15,6 +15,8 @@ import yaml
 import gzip
 from io import StringIO
 from itertools import chain
+from typing import Union, Callable
+from collections import Counter
 from urllib.request import urlopen
 
 class Corpus:
@@ -289,6 +291,112 @@ link_types=None, target=None, default=None, meta={})}
             self.corpus.meta = meta
         else:
             self._meta = meta
+
+    def text_freq(self, layer:str, 
+                  condition : Union[str, 
+            Callable[[str], bool], list] = None) -> dict[str, int]:
+        """Get the frequence of a text string in the corpus.
+
+        Parameters:
+        -----------
+        layer
+            The layer to get the frequency of (e.g. "text")
+        condition
+            A filter to match to. If a single string is given, the frequency
+            of this single word is returned. If a list of strings is given, the 
+            frequency of each string is returned. If a function is given, all 
+            strings are returned for which the function returns True.
+
+        Returns:
+        --------
+        A dictionary with the frequency of each string.
+
+        Examples:
+        ---------
+        >>> corpus = Corpus()
+        >>> corpus.add_layer_meta("text")
+        >>> corpus.add_layer_meta("words", layer_type="span", base="text")
+        >>> doc = corpus.add_doc("This is a document.")
+        >>> doc.words = [(0, 4), (5, 7), (8, 9), (10, 18)]
+        >>> corpus.text_freq("words")
+        Counter({'This': 1, 'is': 1, 'a': 1, 'document': 1})
+        >>> corpus.text_freq("words", lambda x: "i" in x)
+        Counter({'This': 1, 'is': 1})
+        """
+        if condition is None:
+            return Counter(word
+                for _, doc in self.docs
+                for word in doc[layer].text)
+        elif isinstance(condition, str):
+            return Counter(word
+                for _, doc in self.docs
+                           for word in doc[layer].text
+                           if word == condition)
+        elif callable(condition):
+            return Counter(word
+                for _, doc in self.docs
+                for word in doc[layer].text
+                           if condition(word))
+        else:
+            return Counter(word
+                for _, doc in self.docs
+                for word in doc[layer].text
+                           if word in condition)
+
+    def val_freq(self, layer:str,
+                 condition = None) -> Counter:
+        """Get the frequency of a value in a layer.
+
+        Parameters:
+        -----------
+        layer
+            The layer to get the frequency of (e.g. "pos")
+        condition
+            The value to get the frequency of. If a single value is given, the
+            frequency of this single value is returned. If a list of values is
+            given, the frequency of each value is returned. If a function is
+            given, all values are returned for which the function returns True.
+
+        Returns:
+        --------
+        A dictionary with the frequency of each value.
+
+        Examples:
+        ---------
+        >>> corpus = Corpus()
+        >>> corpus.add_layer_meta("text")
+        >>> corpus.add_layer_meta("words", layer_type="span", base="text")
+        >>> corpus.add_layer_meta("pos", layer_type="seq", base="words",
+        ...                        data=["NOUN", "VERB", "ADJ"])
+        >>> doc = corpus.add_doc("Colorless green ideas sleep furiously.")
+        >>> doc.words = [(0, 9), (10, 15), (16, 21), (22, 28), (29, 37)]
+        >>> doc.pos = ["ADJ", "ADJ", "NOUN", "VERB", "ADV"]
+        >>> corpus.val_freq("pos")
+        Counter({'ADJ': 2, 'NOUN': 1, 'VERB': 1, 'ADV': 1})
+        >>> corpus.val_freq("pos", ["NOUN", "VERB"])
+        Counter({'NOUN': 1, 'VERB': 1})
+        >>> corpus.val_freq("pos", lambda x: x[0] == "A")
+        Counter({'ADJ': 2, 'ADV': 1})
+        """
+        if condition is None:
+            return Counter(val
+                for _, doc in self.docs
+                for val in doc[layer].data)
+        elif isinstance(condition, str):
+            return Counter(val
+                for _, doc in self.docs
+                for val in doc[layer].data
+                           if val == condition)
+        elif callable(condition):
+            return Counter(val
+                for _, doc in self.docs
+                for val in doc[layer].data
+                           if condition(val))
+        else:
+            return Counter(val
+                for _, doc in self.docs
+                for val in doc[layer].data
+                           if val in condition)
 
     def to_yaml(self, path_or_buf : str):
         """Write the corpus to a yaml file.
