@@ -7,11 +7,11 @@ readme = "README.md"
 license = "LICENSE"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.8.1"
 pyyaml = "^6.0.1"
 requests = "^2.31.0"
+rdflib = "^7.0.0"
 deprecated = "^1.2.14"
-
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
