@@ -748,6 +748,17 @@ Kjco:\\n    text: This is a document.\\n'
         """
         return TransformedCorpus(self, {layer: transform})
 
+    def __eq__(self, other):
+        """
+        Compare two Teanga Corpora for equality
+        """
+        if not isinstance(other, Corpus):
+            return False
+        if self.doc_ids != other.doc_ids:
+            return False
+        return all(self.doc_by_id(doc_id) == other.doc_by_id(doc_id)
+                   for doc_id in self.doc_ids)
+
 def _yaml_str(s):
     """
     """

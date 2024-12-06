@@ -248,6 +248,16 @@ class Document:
     def __repr__(self):
         return "Document(" + repr(self.id) + ", " + repr(self.layers) + ")"
 
+    def __eq__(self, other):
+        if not isinstance(other, Document):
+            return False
+        if self.id != other.id:
+            return False
+        if self.layers != other.layers:
+            return False
+        return True
+
+
 def validate_value(value, index_length):
     """Validate a single value in a layer and normalise it if necessary.
 
@@ -483,6 +493,13 @@ class CharacterLayer(Layer):
     def __len__(self):
         return len(self._text)
 
+    def __eq__(self, other):
+        if not isinstance(other, CharacterLayer):
+            return False
+        if self._text != other._text:
+            return False
+        return True
+
     def transform(self, transform_func):# -> Self:
         return CharacterLayer(self._name, self._doc, transform_func(self._text))
 
@@ -550,6 +567,13 @@ class SeqLayer(Layer):
     def __len__(self):
         return len(self.seq)
 
+    def __eq__(self, other):
+        if not isinstance(other, SeqLayer):
+            return False
+        if self.seq != other.seq:
+            return False
+        return True
+
     def transform(self, transform_func):# -> Self:
         return SeqLayer(self._name, self._doc, [transform_func(x) for x in self.seq])
 
@@ -578,6 +602,13 @@ class StandoffLayer(Layer):
 
     def __len__(self):
         return len(self._data)
+
+    def __eq__(self, other):
+        if not isinstance(other, StandoffLayer):
+            return False
+        if self._data != other._data:
+            return False
+        return True
 
 class SpanLayer(StandoffLayer):
     """A layer that defines spans of the sublayer which are annotated.
