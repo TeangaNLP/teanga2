@@ -128,9 +128,8 @@ class TransformedCorpus:
                 The transformation function.
 
         Examples:
-            >>> from teanga import Corpus
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> import teanga
+            >>> corpus = teanga.text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.upper().transform("text", lambda x: x[:10])
             >>> list(corpus.docs)

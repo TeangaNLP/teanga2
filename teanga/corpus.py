@@ -138,13 +138,10 @@ class Corpus:
             keyword arguments.
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
 
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("en", layer_type="characters")
-            >>> corpus.add_layer_meta("nl", layer_type="characters")
+            >>> corpus = parallel_corpus(["en", "nl"])
             >>> doc = corpus.add_doc(en="This is a document.", nl="Dit is een document.")
         """
         char_layers = [name for (name, layer) in self.meta.items()
@@ -200,8 +197,7 @@ class Corpus:
         """Return the document ids of the corpus.
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus.doc_ids
             ['Kjco']
@@ -217,8 +213,7 @@ class Corpus:
         """Get all the documents in the corpus
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> list(corpus.docs)
             [('Kjco', Document('Kjco', {'text': CharacterLayer('This is a document.')}))]
@@ -240,8 +235,7 @@ class Corpus:
                 The id of the document.
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus.doc_by_id("Kjco")
             Document('Kjco', {'text': CharacterLayer('This is a document.')})
@@ -305,14 +299,12 @@ class Corpus:
             A dictionary with the frequency of each string.
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
-            >>> corpus.add_layer_meta("words", layer_type="span", base="text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
-            >>> doc.words = [(0, 4), (5, 7), (8, 9), (10, 18)]
-            >>> corpus.text_freq("words")
+            >>> doc.tokens = [(0, 4), (5, 7), (8, 9), (10, 18)]
+            >>> corpus.text_freq("tokens")
             Counter({'This': 1, 'is': 1, 'a': 1, 'document': 1})
-            >>> corpus.text_freq("words", lambda x: "i" in x)
+            >>> corpus.text_freq("tokens", lambda x: "i" in x)
             Counter({'This': 1, 'is': 1})
         """
         if condition is None:
@@ -716,8 +708,7 @@ Kjco:\\n    text: This is a document.\\n'
         """Uppercase all the text in the corpus.
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.upper()
             >>> list(corpus.docs)
@@ -739,8 +730,7 @@ Kjco:\\n    text: This is a document.\\n'
                 The transformation function.
 
         Examples:
-            >>> corpus = Corpus()
-            >>> corpus.add_layer_meta("text")
+            >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.transform("text", lambda x: x[:10])
             >>> list(corpus.docs)
@@ -894,6 +884,45 @@ def from_url(url:str, db_file:str=None) -> Corpus:
         else:
             return _corpus_hook(yaml.load(urlopen(url), Loader=yaml.FullLoader))
 
+def text_corpus(db_file:str = None) -> Corpus:
+    """
+    Create a corpus with a `text` and `tokens` layer
+
+    Args:
+        db_file: str
+            The path to the database file, if the corpus should be stored in a
+            database.
+    
+    Returns:
+        A corpus with a `text` and `tokens` layer
+    """
+    corpus = Corpus(db=db_file)
+    corpus.add_layer_meta("text")
+    corpus.add_layer_meta("tokens", layer_type="span", base="text")
+    return corpus
+
+def parallel_corpus(languages : list[str], db_file:str = None) -> Corpus:
+    """
+    Create a corpus with a character layer and token layer for each language
+
+    Args:
+        languages: list[str]
+            The languages to create the corpus for
+        db_file: str
+            The path to the database file, if the corpus should be stored in a
+            database.
+
+    Returns:
+        A corpus with a character layer and token layer for each language
+
+    Examples:
+        >>> corpus = parallel_corpus(["en", "nl"])
+    """
+    corpus = Corpus(db=db_file)
+    for lang in languages:
+        corpus.add_layer_meta(lang, layer_type="characters")
+        corpus.add_layer_meta(lang + "_tokens", layer_type="span", base=lang)
+    return corpus
 
 def teanga_db_fail():
     """

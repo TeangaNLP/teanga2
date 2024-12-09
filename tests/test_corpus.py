@@ -137,7 +137,6 @@ def test_default_layers():
     yaml_str = corpus.to_yaml_str()
     obj = yaml.load(yaml_str, Loader=yaml.FullLoader)
     assert obj["_meta"]["document"]["default"] == [0]
-    print(obj.keys())
     assert "docuemnt" not in obj["bAiu"]
 
 def test_sentences():
@@ -148,7 +147,6 @@ def test_sentences():
     doc = corpus.add_doc(text="Hello world. This is a test.")
     doc.words = [[0, 5], [6, 11], [11, 12], [13, 15], [16, 16], [17, 20]]
     doc.sentences = [0, 3]
-    print(list(doc.sentences.indexes("text")))
     sentences = doc.sentences.text
     assert sentences[0] == "Hello world. "
     assert sentences[1] == "This is a test."
