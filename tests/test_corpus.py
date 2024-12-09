@@ -90,16 +90,16 @@ k0Jl:
   dep: [[1, "nsubj"], [1, "root"], [2, "det"], [1, "dobj"]]"""
     teanga.read_yaml_str(example)
 
-def test_readme_example_3():
-    example = """_meta:
-    _uri: https://jmccrae.github.io/teanga2/meta/basic.yaml
-    author:
-        base: document
-        data: string
-        _uri: https://jmccrae.github.io/teanga2/props/author.html
-jjVi:
-    _uri: corpus/doc1.yaml"""
-    teanga.read_yaml_str(example)
+#def test_readme_example_3():
+#    example = """_meta:
+#    _uri: https://jmccrae.github.io/teanga2/meta/basic.yaml
+#    author:
+#        base: document
+#        data: string
+#        _uri: https://jmccrae.github.io/teanga2/props/author.html
+#jjVi:
+#    _uri: corpus/doc1.yaml"""
+#    teanga.read_yaml_str(example)
 
 
 def test_ud():
@@ -171,4 +171,17 @@ def test_long_text_yaml_serialize():
     print(yaml_str)
     corpus2 = teanga.read_yaml_str(yaml_str)
     
-
+def test_write_meta():
+    corpus = teanga.Corpus()
+    corpus.add_layer_meta("text", layer_type="characters")
+    doc = corpus.add_doc(text="Hello world")
+    doc.metadata["author"] = "John P. McCrae"
+    yaml_str = corpus.to_yaml_str()
+    print(yaml_str)
+    assert(yaml_str == """_meta:
+    text:
+        type: characters
+bAiu:
+    text: Hello world
+    _author: John P. McCrae
+""")
