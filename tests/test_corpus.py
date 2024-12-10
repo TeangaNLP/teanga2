@@ -1,5 +1,6 @@
 import teanga
 import yaml
+import tempfile
 
 def test_yaml_conv_1():
     c = teanga.Corpus()
@@ -172,3 +173,16 @@ def test_long_text_yaml_serialize():
     corpus2 = teanga.read_yaml_str(yaml_str)
     
 
+def test_tcf():
+    try:
+        import teangadb
+    except ImportError:
+        print("Skipping TCF test as teangadb not available")
+        return
+    corpus = teanga.Corpus()
+    corpus.add_layer_meta("text")
+    doc = corpus.add_doc("This is a document.")
+    # create a temporary TCF file
+    temp_file = tempfile.NamedTemporaryFile(delete=True)
+    corpus.to_tcf(temp_file.name)
+    corpus = teanga.read_tcf(temp_file.name)

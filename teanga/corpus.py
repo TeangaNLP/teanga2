@@ -15,6 +15,7 @@ import os
 import json
 import yaml
 import gzip
+import tempfile
 from io import StringIO
 from itertools import chain
 from typing import Iterator, Union, Callable
@@ -669,6 +670,24 @@ Kjco:\\n    text: This is a document.\\n'
                            for layer_id in doc.layers}
         json.dump(dct, writer)
 
+    def to_tcf(self, path:str):
+        """Write the corpus to a TCF file.
+
+        Args:
+            path: str
+                The path to the TCF file.
+        """
+        if self.corpus:
+            teangadb.write_corpus_to_tcf(self.corpus, path)
+        else:
+            if not TEANGA_DB:
+                teanga_db_fail()
+            tmpfile = tempfile.mkstemp()[1]
+            self.to_json(tmpfile)
+            tmppath = tempfile.mkdtemp()
+            corpus = teangadb.read_corpus_from_json_file(tmpfile, tmppath)
+            teangadb.write_corpus_to_tcf(corpus, path)
+
     def apply(self, service : Service):
         """Apply a service to each document in the corpus.
 
@@ -894,6 +913,21 @@ def from_url(url:str, db_file:str=None) -> Corpus:
         else:
             return _corpus_hook(yaml.load(urlopen(url), Loader=yaml.FullLoader))
 
+def read_tcf(file:str, db_file:str=None) -> Corpus:
+    """Read a corpus from a TCF file. Requires TeangaDB module.
+
+    Args:
+        file: str
+            The path to the TCF file.
+        db_file: str
+            The path to the database file, if the corpus should be stored in a
+            database.
+    """
+    if not TEANGA_DB:
+        teanga_db_fail()
+    if not db_file:
+        db_file = tempfile.mkdtemp()
+    return Corpus(db_corpus=teangadb.read_corpus_from_tcf_file(file, db_file))
 
 def teanga_db_fail():
     """
