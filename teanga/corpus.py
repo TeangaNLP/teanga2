@@ -17,7 +17,7 @@ import yaml
 import gzip
 from io import StringIO
 from itertools import chain
-from typing import Iterator, Union, Callable
+from typing import Iterator, Union, Callable, Iterable  
 from collections import Counter, defaultdict
 from urllib.request import urlopen
 import re
@@ -44,7 +44,7 @@ class Corpus:
         else:
             self.corpus = None
             self.meta = {}
-            self._docs = []
+            self._docs = {}
 
 
     def add_meta_from_service(self, service : Service):
@@ -161,7 +161,7 @@ class Corpus:
                     self.corpus.add_doc({ char_layers[0]: args[0] })
                     doc.corpus = self.corpus
                 else:
-                    self._docs.append((doc_id, doc))
+                    self._docs[doc_id] = doc
                 return doc
             elif len(kwargs) == 1 and list(kwargs.keys())[0] == char_layers[0]:
                 doc_id = teanga_id_for_doc(self.doc_ids,
@@ -171,7 +171,7 @@ class Corpus:
                     self.corpus.add_doc(**kwargs)
                     doc.corpus = self.corpus
                 else:
-                    self._docs.append((doc_id, doc))
+                    self._docs[doc_id] = doc
                 return doc
             else:
                 raise Exception("Invalid arguments, please specify the text " +
@@ -189,28 +189,28 @@ class Corpus:
                     self.corpus.add_doc(kwargs)
                     doc.corpus = self.corpus
                 else:
-                    self._docs.append((doc_id, doc))
+                    self._docs[doc_id] = doc
                 return doc
             else:
                 raise Exception("Invalid arguments, please specify the text " +
                                 "or use correct layer names.")
 
     @property
-    def doc_ids(self) -> list[str]:
+    def doc_ids(self) -> Iterable[str]:
         """Return the document ids of the corpus.
 
         Examples:
             >>> corpus = Corpus()
             >>> corpus.add_layer_meta("text")
             >>> doc = corpus.add_doc("This is a document.")
-            >>> corpus.doc_ids
+            >>> list(corpus.doc_ids)
             ['Kjco']
 
         """
         if self.corpus:
             return self.corpus.order
         else:
-            return [doc[0] for doc in self._docs]
+            return self._docs.keys()
 
     @property
     def docs(self) -> Iterator[tuple[str, Document]]:
@@ -228,7 +228,7 @@ class Corpus:
                 yield (doc_id, Document(self.meta, id=doc_id, corpus=self.corpus,
                                         **self.corpus.get_doc_by_id(doc_id)))
         else:
-            for doc in self._docs:
+            for doc in self._docs.items():
                 yield doc
 
     def doc_by_id(self, doc_id:str) -> Document:
@@ -255,10 +255,10 @@ class Corpus:
             return Document(self.meta, id=doc_id, corpus=self.corpus,
                             **self.corpus.get_doc_by_id(doc_id))
         else:
-            for doc in self._docs:
-                if doc[0] == doc_id:
-                    return doc[1]
-            raise Exception("Document with id " + doc_id + " not found.")
+            if doc_id in self._docs:
+                return self._docs[doc_id]
+            else:
+                raise Exception("Document with id " + doc_id + " not found.")
 
     @property
     def meta(self) -> dict[str, LayerDesc]:
@@ -598,7 +598,7 @@ Kjco:\\n    text: This is a document.\\n'
             if meta.default:
                 writer.write("        default: " +
                              self._dump_yaml_json(meta.default))
-        for id, doc in self._docs:
+        for id, doc in self._docs.items():
             if re.match(r"^[0-9]+$", id):
                 writer.write("\"" + id + "\":\n")
             else:
@@ -663,8 +663,8 @@ Kjco:\\n    text: This is a document.\\n'
         dct["_meta"] = {name: _from_layer_desc(data)
                         for name, data in self.meta.items()
                         if not name.startswith("_")}
-        dct["_order"] = self.doc_ids
-        for doc_id, doc in self._docs:
+        dct["_order"] = list(self.doc_ids)
+        for doc_id, doc in self._docs.items():
             dct[doc_id] = {layer_id: doc[layer_id].raw
                            for layer_id in doc.layers}
         json.dump(dct, writer)
@@ -771,7 +771,7 @@ def _corpus_hook(dct : dict) -> Corpus:
               if not key.startswith("_")}
     if "_order" in dct:
         for doc_id in dct["_order"]:
-            c._docs.append((doc_id, Document(c.meta, id=doc_id, **dct[doc_id])))
+            c._docs[doc_id] = Document(c.meta, id=doc_id, **dct[doc_id])
     else:
         for doc_id, value in dct.items():
             if not doc_id.startswith("_"):
@@ -784,7 +784,7 @@ def _corpus_hook(dct : dict) -> Corpus:
                 if tid != doc_id:
                     raise Exception("Invalid document id: " + doc_id +
                                     " should be " + tid)
-                c._docs.append((doc_id, doc))
+                c._docs[doc_id] = doc
     return c
 
 def read_json_str(json_str:str, db_file:str=None) -> Corpus:
