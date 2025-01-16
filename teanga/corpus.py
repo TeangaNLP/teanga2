@@ -282,6 +282,31 @@ class Corpus:
         else:
             self._meta = meta
 
+    def view(self, *args):
+        """Create a view on the corpus.
+
+        Parameters:
+        -----------
+            args: str
+                The names of the layers to view.
+
+        Examples:
+        ---------
+
+        >>> corpus = Corpus()
+        >>> corpus.add_layer_meta("text")
+        >>> corpus.add_layer_meta("words", layer_type="span", base="text")
+        >>> corpus.add_layer_meta("sentences", layer_type="div", base="words")
+        >>> doc = corpus.add_doc("This is a sentence. This is another sentence.")
+        >>> doc.words = [(0, 4), (5, 7), (8, 9), (10, 18), (20, 24), (25, 27),
+        ...               (28, 35), (36, 44)]
+        >>> doc.sentences = [0, 4]
+        >>> doc.view("words", "sentences")
+        [['This', 'is', 'a', 'sentence'], ['This', 'is', 'another', 'sentence']]
+        """
+        for doc_id, doc in self.docs:
+            yield doc.view(*args)
+
     def text_freq(self, layer:str,
                   condition : Union[str,
             Callable[[str], bool], list] = None) -> dict[str, int]:
