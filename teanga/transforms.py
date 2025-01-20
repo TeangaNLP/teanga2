@@ -46,12 +46,12 @@ class TransformedCorpus:
         return self.corpus.doc_ids()
 
     @property
-    def docs(self) -> Iterator[tuple[str, 'Document']]:
+    def docs(self) -> Iterator['Document']:
         """Return an iterator over the documents in the corpus.
         See Corpus.docs for more information.
         """
-        for doc_id, doc in self.corpus.docs:
-           yield (doc_id, self.transform_doc(doc)) 
+        for doc in self.corpus.docs:
+           yield self.transform_doc(doc)
 
     def transform_doc(self, doc: 'Document') -> 'Document':
         """Transform a document using the transformation functions.
@@ -133,7 +133,7 @@ class TransformedCorpus:
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.upper().transform("text", lambda x: x[:10])
             >>> list(corpus.docs)
-            [('Kjco', Document('Kjco', {'text': CharacterLayer('THIS IS A ')}))]
+            [Document('Kjco', {'text': CharacterLayer('THIS IS A ')})]
         """
         new_transform = self._transform.copy()
         if layer in self._transform:

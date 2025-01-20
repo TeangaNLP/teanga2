@@ -17,7 +17,7 @@ def teanga_corpus_to_rdf(graph, corpus, url: str):
     teanga = rdflib.Namespace("http://teanga.io/teanga#")
     graph.add((rdflib.URIRef(url), RDF.type, teanga.Corpus))
     for document in corpus.docs:
-        document_id, document = document
+        document_id = document.id
         doc_url = url + "#" + document_id
         graph.add((rdflib.URIRef(doc_url), RDF.type, teanga.Document))
         graph.add((rdflib.URIRef(url), teanga.document, rdflib.URIRef(doc_url)))
@@ -143,7 +143,7 @@ def teanga_corpus_to_nif(graph, corpus, url :str) -> None:
     nif = rdflib.Namespace("http://persistence.uni-leipzig.org/nlp2rdf/ontologies/nif-core#")
     teanga = rdflib.Namespace("http://teanga.io/teanga#")
     for document in corpus.docs:
-        document_id, document = document
+        document_id = document.id
         doc_url = url + "#" + document_id
         graph.add((rdflib.URIRef(doc_url), RDF.type, teanga.Document))
         graph.add((rdflib.URIRef(doc_url), RDF.type, nif.Context))
@@ -221,7 +221,7 @@ def teanga_corpus_to_webanno(corpus : teanga.Corpus, url : str) -> list[dict]:
     webannos = []
     teanga_ns = "http://teanga.io/teanga#"
     for document in corpus.docs:
-        document_id, document = document
+        document_id = document.id
         for layer in document.layers:
             layer_desc = corpus.meta[layer]
             if "uri" in layer_desc.meta:

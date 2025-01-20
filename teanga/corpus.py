@@ -210,22 +210,22 @@ class Corpus:
             return self._docs.keys()
 
     @property
-    def docs(self) -> Iterator[tuple[str, Document]]:
+    def docs(self) -> Iterator[Document]:
         """Get all the documents in the corpus
 
         Examples:
             >>> corpus = text_corpus()
             >>> doc = corpus.add_doc("This is a document.")
             >>> list(corpus.docs)
-            [('Kjco', Document('Kjco', {'text': CharacterLayer('This is a document.')}))]
+            [Document('Kjco', {'text': CharacterLayer('This is a document.')})]
         """
         if self.corpus:
             for doc_id in self.corpus.order:
-                yield (doc_id, Document(self.meta, id=doc_id, corpus=self.corpus,
-                                        **self.corpus.get_doc_by_id(doc_id)))
+                yield Document(self.meta, id=doc_id, corpus=self.corpus,
+                                        **self.corpus.get_doc_by_id(doc_id))
         else:
             for doc in self._docs.items():
-                yield doc
+                yield doc[1]
 
     def doc_by_id(self, doc_id:str) -> Document:
         """
@@ -254,6 +254,38 @@ class Corpus:
                 return self._docs[doc_id]
             else:
                 raise Exception("Document with id " + doc_id + " not found.")
+
+    def __getitem__(self, key:str) -> Document:
+        """Get a document by its id.
+
+        Args:
+            key: Union[str, int, slice]
+                The id of the document. Strings use document identifiers, while integers use the order of the documents in the corpus.
+
+        Examples:
+            >>> corpus = text_corpus()
+            >>> doc = corpus.add_doc("This is a document.")
+            >>> corpus["Kjco"]
+            Document('Kjco', {'text': CharacterLayer('This is a document.')})
+            >>> corpus[0]
+            Document('Kjco', {'text': CharacterLayer('This is a document.')})
+            >>> corpus[:1]
+            [Document('Kjco', {'text': CharacterLayer('This is a document.')})]
+        """
+        if isinstance(key, int):
+            if self.corpus:
+                return self.doc_by_id[self.corpus.order[key]]
+            else:
+                return self.doc_by_id(list(self.doc_ids)[key])
+        elif isinstance(key, slice):
+            if self.corpus:
+                return [self.doc_by_id(doc_id) for doc_id in self.corpus.order[key]]
+            else:
+                return [self.doc_by_id(doc_id) for doc_id in list(self.doc_ids)[key]]
+        elif isinstance(key, str):
+            return self.doc_by_id(key)
+        else:
+            raise Exception("Invalid key type.")
 
     @property
     def meta(self) -> dict[str, LayerDesc]:
@@ -310,21 +342,21 @@ class Corpus:
         """
         if condition is None:
             return Counter(word
-                for _, doc in self.docs
+                for doc in self.docs
                 for word in doc[layer].text)
         elif isinstance(condition, str):
             return Counter(word
-                for _, doc in self.docs
+                for doc in self.docs
                            for word in doc[layer].text
                            if word == condition)
         elif callable(condition):
             return Counter(word
-                for _, doc in self.docs
+                for doc in self.docs
                 for word in doc[layer].text
                            if condition(word))
         else:
             return Counter(word
-                for _, doc in self.docs
+                for doc in self.docs
                 for word in doc[layer].text
                            if word in condition)
 
@@ -362,21 +394,21 @@ class Corpus:
         """
         if condition is None:
             return Counter(val
-                for _, doc in self.docs
+                for doc in self.docs
                 for val in doc[layer].data)
         elif isinstance(condition, str):
             return Counter(val
-                for _, doc in self.docs
+                for doc in self.docs
                 for val in doc[layer].data
                            if val == condition)
         elif callable(condition):
             return Counter(val
-                for _, doc in self.docs
+                for doc in self.docs
                 for val in doc[layer].data
                            if condition(val))
         else:
             return Counter(val
-                for _, doc in self.docs
+                for doc in self.docs
                 for val in doc[layer].data
                            if val in condition)
 
@@ -393,10 +425,10 @@ class Corpus:
         of a layer. Mostly used for metadata layers (e.g., "author", "genre")
         """
         grouping = defaultdict(list)
-        for doc_id, doc in self.docs:
+        for doc in self.docs:
             if layer in doc:
                 for value in doc[layer].data:
-                    grouping[value].append(doc_id)
+                    grouping[value].append(doc.id)
         return GroupedCorpus(self, grouping)
 
     def search(self, query=None, **kwargs) -> Iterator[str]:
@@ -481,17 +513,17 @@ class Corpus:
                 yield result
         else:
             if kwargs:
-                for doc_id, doc in self.docs:
+                for doc in self.docs:
                     if all(next(doc[layer].matches(value), None)
                            for layer, value in kwargs.items()):
-                        yield doc_id
+                        yield doc.id
             else:
-                for doc_id, doc in self.docs:
+                for doc in self.docs:
                     for key, value in query.items():
                         if not self._doc_matches(doc, key, value):
                             break
                     else:
-                        yield doc_id
+                        yield doc.id
 
     def normalise_query(self, query):
         """Normalise a query by replacing all field values with either `$eq` or
@@ -703,7 +735,7 @@ Kjco:\\n    text: This is a document.\\n'
             >>> corpus.apply(FirstCharService())
         """
         self.add_meta_from_service(service)
-        for _, doc in self.docs:
+        for doc in self.docs:
             service.execute(doc)
 
 
@@ -716,7 +748,7 @@ Kjco:\\n    text: This is a document.\\n'
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.lower()
             >>> list(corpus.docs)
-            [('Kjco', Document('Kjco', {'text': CharacterLayer('this is a document.')}))]
+            [Document('Kjco', {'text': CharacterLayer('this is a document.')})]
         """
         text_layers = [layer for layer in self.meta
                        if self.meta[layer].layer_type == "characters"]
@@ -731,7 +763,7 @@ Kjco:\\n    text: This is a document.\\n'
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.upper()
             >>> list(corpus.docs)
-            [('Kjco', Document('Kjco', {'text': CharacterLayer('THIS IS A DOCUMENT.')}))]
+            [Document('Kjco', {'text': CharacterLayer('THIS IS A DOCUMENT.')})]
         """
         text_layers = [layer for layer in self.meta
                        if self.meta[layer].layer_type == "characters"]
@@ -753,7 +785,7 @@ Kjco:\\n    text: This is a document.\\n'
             >>> doc = corpus.add_doc("This is a document.")
             >>> corpus = corpus.transform("text", lambda x: x[:10])
             >>> list(corpus.docs)
-            [('Kjco', Document('Kjco', {'text': CharacterLayer('This is a ')}))]
+            [Document('Kjco', {'text': CharacterLayer('This is a ')})]
         """
         return TransformedCorpus(self, {layer: transform})
 
