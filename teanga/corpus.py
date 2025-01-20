@@ -605,6 +605,8 @@ Kjco:\\n    text: This is a document.\\n'
                 else:
                     writer.write(layer_id + ": ")
                     writer.write(json.dumps(doc[layer_id].raw) + "\n")
+            for key, value in doc.metadata.items():
+                writer.write("    _" + key + ": " + _yaml_str(value))
 
     def _dump_yaml_json(self, obj):
         """
@@ -660,6 +662,8 @@ Kjco:\\n    text: This is a document.\\n'
         for doc_id, doc in self._docs.items():
             dct[doc_id] = {layer_id: doc[layer_id].raw
                            for layer_id in doc.layers}
+            dct[doc_id].update({"_" + key: value
+                                for key, value in doc.metadata.items()})
         json.dump(dct, writer)
 
     def to_tcf(self, path:str):
@@ -757,6 +761,17 @@ Kjco:\\n    text: This is a document.\\n'
         """
         return TransformedCorpus(self, {layer: transform})
 
+    def __eq__(self, other):
+        """
+        Compare two Teanga Corpora for equality
+        """
+        if not isinstance(other, Corpus):
+            return False
+        if self.doc_ids != other.doc_ids:
+            return False
+        return all(self.doc_by_id(doc_id) == other.doc_by_id(doc_id)
+                   for doc_id in self.doc_ids)
+
 def _yaml_str(s):
     """
     """
@@ -787,8 +802,10 @@ def _corpus_hook(dct : dict) -> Corpus:
                 doc = Document(c.meta, id=doc_id, **value)
                 text_fields = {
                         field: value for field, value in value.items()
-                        if isinstance(value, str)
+                        if isinstance(value, str) and not field.startswith("_")
                 }
+                if not text_fields:
+                    raise Exception("No text field found in document " + doc_id)
                 tid = teanga_id_for_doc(c.doc_ids, **text_fields)
                 if tid != doc_id:
                     raise Exception("Invalid document id: " + doc_id +

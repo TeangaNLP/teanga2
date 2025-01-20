@@ -34,3 +34,28 @@ def teanga_id_for_doc(ids, *args, **kwargs):
     return code[:n]
 
 
+def find_spans(tokens, text):
+    """Find the spans of tokens in the text.
+
+    Parameters:
+        tokens: list
+            A list of tokens to find in the text.
+        text: str
+            The text to search for the tokens.
+
+    Exceptions:
+        ValueError: If the tokens do not match the text.
+    """
+    i = 0
+    tk_idx = 0
+    spans = []
+    while i < len(text) and tk_idx < len(text):
+        if text[i:].startswith(tokens[tk_idx]):
+            spans.append([i, i+len(tokens[tk_idx])])
+            i += len(tokens[tk_idx])
+            tk_idx += 1
+        else:
+            i += 1
+    if tk_idx < len(tokens):
+        raise ValueError("Tokenization mismatch")
+    return spans

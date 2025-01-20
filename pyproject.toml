@@ -13,6 +13,7 @@ requests = "^2.31.0"
 rdflib = "^7.0.0"
 deprecated = "^1.2.14"
 regex = "^2024.5.15"
+conllu = "^6.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.0.2"
