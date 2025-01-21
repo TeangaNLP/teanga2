@@ -18,7 +18,7 @@ import gzip
 import tempfile
 from io import StringIO
 from itertools import chain
-from typing import Iterator, Union, Callable, Iterable  
+from typing import Iterator, Union, Callable, Iterable, Tuple, List, Optional
 from collections import Counter, defaultdict
 from urllib.request import urlopen
 import re
@@ -920,7 +920,8 @@ def text_corpus(db_file:str = None) -> Corpus:
     corpus.add_layer_meta("tokens", layer_type="span", base="text")
     return corpus
 
-def parallel_corpus(languages : list[str], db_file:str = None) -> Corpus:
+def parallel_corpus(languages : list[str], db_file:str = None,
+                    alignments : Optional[List[Tuple[str, str]]] = None) -> Corpus:
     """
     Create a corpus with a character layer and token layer for each language
 
@@ -930,17 +931,30 @@ def parallel_corpus(languages : list[str], db_file:str = None) -> Corpus:
         db_file: str
             The path to the database file, if the corpus should be stored in a
             database.
+        alignments:
+            A list of pairs of language to add an alignment field for.
 
     Returns:
         A corpus with a character layer and token layer for each language
 
     Examples:
-        >>> corpus = parallel_corpus(["en", "nl"])
+        >>> corpus = parallel_corpus(["en","de","nl"], 
+        ...   alignments=[("en","de"),("en","nl")])
+        >>> doc = corpus.add_doc(en="hello, world", de="Hallo, Welt!")
+        >>> doc.en_tokens = [(0,5), (7,12)]
+        >>> doc.de_tokens = [(0,5), (7,11)]
+        >>> doc.en_de_alignments = [(0,0),(1,1)]
     """
     corpus = Corpus(db=db_file)
     for lang in languages:
         corpus.add_layer_meta(lang, layer_type="characters")
         corpus.add_layer_meta(lang + "_tokens", layer_type="span", base=lang)
+    if alignments:
+        for src, trg in alignments:
+            corpus.add_layer_meta(src + "_" + trg + "_alignments",
+                                  layer_type="element", base=src + "_tokens",
+                                  target=trg + "_tokens",
+                                  data="link")
     return corpus
 
 def read_tcf(file:str, db_file:str=None) -> Corpus:
