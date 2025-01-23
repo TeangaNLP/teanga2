@@ -70,8 +70,17 @@ class Document:
         if isinstance(value, Layer):
             self.layers[name] = value
             return value
+        if self._meta[name].layer_type is None:
+            raise Exception("Layer " + name + " has no layer type.")
+        if self._meta[name].layer_type not in ["characters", "seq", "span", "div", "element"]:
+            raise Exception("Invalid layer type " + self._meta[name].layer_type)
         if self._meta[name].layer_type == "characters":
             self.layers[name] = CharacterLayer(name, self, str(value))
+        elif self._meta[name].base is None:
+            raise Exception("Non-character layer " + name + " must have a base.")
+        elif (self._meta[name].base not in self._meta):
+            raise Exception("Layer refers to non-existent base layer: " +
+                str(self._meta[name].base))
         elif (self._meta[name].base not in self.layers and
                 self._meta[self._meta[name].base].default is None):
             raise Exception("Cannot add layer " + name + " because sublayer " +

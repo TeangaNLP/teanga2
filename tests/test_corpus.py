@@ -120,7 +120,7 @@ k0Jl:
     words: [[0,4], [5,7], [8,10], [11,17]]
     rel: [[1, "nsubj"], [1, "root"], [2, "det"], [1, "dobj"]]"""
     corpus = teanga.read_yaml_str(example)
-    for id, doc in corpus.docs:
+    for doc in corpus.docs:
         for layer in doc.layers:
             print(doc[layer].data)
 
@@ -128,7 +128,7 @@ def test_open_url():
     corpus = teanga.from_url("https://teanga.io/examples/ex1.yaml")
     corpus_docs = list(corpus.docs)
     assert len(corpus_docs) == 1
-    assert corpus_docs[0][1].text.text[0] == "Teanga2 data model"
+    assert corpus_docs[0].text.text[0] == "Teanga2 data model"
 
 def test_default_layers():
     corpus = teanga.Corpus()
